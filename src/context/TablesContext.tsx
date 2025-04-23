@@ -1,36 +1,9 @@
+
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { toast } from '@/components/ui/use-toast';
-
-export interface Column {
-  accessor: string;
-  header: string;
-  type: 'string' | 'number' | 'boolean' | 'date';
-}
-
-export interface Table {
-  id: string;
-  name: string;
-  type: 'uploaded' | 'merged';
-  createdAt: Date;
-  lastAccessed?: Date;
-  columns: Column[];
-  data: Record<string, any>[];
-  parentTables?: string[]; // For merged tables
-  rowCount: number;
-}
-
-export interface ChatSession {
-  id: string;
-  tableId: string;
-  name: string;
-  createdAt: Date;
-  messages: {
-    id: string;
-    role: 'user' | 'system';
-    content: string;
-    timestamp: Date;
-  }[];
-}
+import { Table, ChatSession } from '../types/tables';
+import { parseCSV, performTableMerge } from '../utils/tableOperations';
+import { createNewChatSession, processAIResponse } from '../utils/chatOperations';
 
 interface TablesContextType {
   tables: Table[];
@@ -56,42 +29,6 @@ export const TablesProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [tables, setTables] = useState<Table[]>([]);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
 
-  // Helper function to parse CSV data
-  const parseCSV = (csvText: string): { columns: Column[], data: Record<string, any>[] } => {
-    const lines = csvText.split('\n').filter(line => line.trim());
-    const headers = lines[0].split(',').map(header => header.trim());
-    
-    const columns = headers.map(header => ({
-      accessor: header,
-      header,
-      type: 'string' as const
-    }));
-    
-    const data = lines.slice(1).map(line => {
-      const values = line.split(',').map(val => val.trim());
-      const row: Record<string, any> = {};
-      
-      headers.forEach((header, index) => {
-        const value = values[index] || '';
-        // Try to determine type
-        if (!isNaN(Number(value)) && value !== '') {
-          row[header] = Number(value);
-          // Update column type if not already set to number
-          if (columns[index].type === 'string') {
-            columns[index].type = 'number';
-          }
-        } else {
-          row[header] = value;
-        }
-      });
-      
-      return row;
-    });
-    
-    return { columns, data };
-  };
-
-  // Upload a new table from a file
   const uploadTable = async (file: File) => {
     try {
       const text = await file.text();
@@ -122,15 +59,10 @@ export const TablesProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   };
 
-  // Get a table by ID
-  const getTable = (id: string) => {
-    return tables.find(table => table.id === id);
-  };
-
-  // Delete a table by ID
+  const getTable = (id: string) => tables.find(table => table.id === id);
+  
   const deleteTable = (id: string) => {
     setTables(prev => prev.filter(table => table.id !== id));
-    // Also delete any chat sessions associated with this table
     setChatSessions(prev => prev.filter(session => session.tableId !== id));
     toast({
       title: "Table deleted",
@@ -138,105 +70,33 @@ export const TablesProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     });
   };
 
-  // Merge tables based on join type and column mappings
   const mergeTables = async (
     tableIds: string[],
     name: string,
     joinType: 'inner' | 'outer' | 'left' | 'right',
     columnMappings: Record<string, string>
   ): Promise<string> => {
-    // Simple implementation for MVP
     const tablesToMerge = tableIds.map(id => getTable(id)).filter(Boolean) as Table[];
     
-    if (tablesToMerge.length < 2) {
-      throw new Error("Need at least two tables to merge");
+    try {
+      const mergedTable = performTableMerge(tablesToMerge, name, joinType, columnMappings);
+      setTables(prev => [...prev, mergedTable]);
+      toast({
+        title: "Tables merged successfully",
+        description: `${mergedTable.name} with ${mergedTable.data.length} rows has been created.`
+      });
+      return mergedTable.id;
+    } catch (error) {
+      console.error("Error merging tables:", error);
+      toast({
+        variant: "destructive",
+        title: "Error merging tables",
+        description: error instanceof Error ? error.message : "An error occurred while merging tables."
+      });
+      throw error;
     }
-    
-    let mergedData: Record<string, any>[] = [];
-    
-    const baseTable = tablesToMerge[0];
-    const secondTable = tablesToMerge[1];
-    
-    // For MVP, only implement inner join on two tables
-    if (joinType === 'inner') {
-      // Get the mapped columns
-      const mappingKeys = Object.keys(columnMappings);
-      
-      // Simple inner join
-      mergedData = baseTable.data.reduce((acc, baseRow) => {
-        const matches = secondTable.data.filter(secondRow => {
-          // Check if all mapping conditions are met
-          return mappingKeys.every(baseCol => 
-            baseRow[baseCol] === secondRow[columnMappings[baseCol]]
-          );
-        });
-        
-        if (matches.length > 0) {
-          matches.forEach(match => {
-            const newRow = { ...baseRow };
-            
-            // Add all columns from the second table (except mapped ones)
-            Object.keys(match).forEach(key => {
-              // Skip columns that are already mapped to avoid duplication
-              if (!Object.values(columnMappings).includes(key)) {
-                // Avoid name collisions by prefixing if needed
-                const newKey = baseRow.hasOwnProperty(key) ? `${secondTable.name}_${key}` : key;
-                newRow[newKey] = match[key];
-              }
-            });
-            
-            acc.push(newRow);
-          });
-        }
-        
-        return acc;
-      }, [] as Record<string, any>[]);
-    }
-    
-    // Create combined list of columns
-    let mergedColumns: Column[] = [...baseTable.columns];
-    
-    // Add columns from second table, avoiding duplicates from mappings
-    secondTable.columns.forEach(col => {
-      const mappedValues = Object.values(columnMappings);
-      
-      if (!mappedValues.includes(col.accessor)) {
-        // Check if there's a name collision
-        const existingCol = mergedColumns.find(c => c.accessor === col.accessor);
-        if (existingCol) {
-          // Use prefixed name
-          mergedColumns.push({
-            ...col,
-            accessor: `${secondTable.name}_${col.accessor}`,
-            header: `${secondTable.name} ${col.header}`
-          });
-        } else {
-          mergedColumns.push(col);
-        }
-      }
-    });
-    
-    const mergedTable: Table = {
-      id: `merged-${Date.now()}`,
-      name: name || `Merged Table ${tables.filter(t => t.type === 'merged').length + 1}`,
-      type: 'merged',
-      createdAt: new Date(),
-      columns: mergedColumns,
-      data: mergedData,
-      parentTables: tableIds,
-      rowCount: mergedData.length
-    };
-    
-    setTables(prev => [...prev, mergedTable]);
-    toast({
-      title: "Tables merged successfully",
-      description: `${mergedTable.name} with ${mergedData.length} rows has been created.`
-    });
-    
-    return mergedTable.id;
   };
 
-  // Create a new chat session
   const createChatSession = (tableId: string, name?: string): string => {
     const table = getTable(tableId);
     if (!table) {
@@ -248,32 +108,13 @@ export const TablesProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       return '';
     }
     
-    const sessionId = `chat-${Date.now()}`;
-    const newSession: ChatSession = {
-      id: sessionId,
-      tableId,
-      name: name || `Chat about ${table.name}`,
-      createdAt: new Date(),
-      messages: [
-        {
-          id: `msg-${Date.now()}`,
-          role: 'system',
-          content: `This is an AI assistant to help you analyze the table: ${table.name}. Ask any questions about the data.`,
-          timestamp: new Date()
-        }
-      ]
-    };
-    
+    const newSession = createNewChatSession(table, name);
     setChatSessions(prev => [...prev, newSession]);
-    return sessionId;
+    return newSession.id;
   };
 
-  // Get a chat session by ID
-  const getChatSession = (id: string) => {
-    return chatSessions.find(session => session.id === id);
-  };
+  const getChatSession = (id: string) => chatSessions.find(session => session.id === id);
 
-  // Send a message in a chat session
   const sendMessage = async (sessionId: string, message: string) => {
     const session = getChatSession(sessionId);
     if (!session) {
@@ -295,7 +136,6 @@ export const TablesProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       return;
     }
     
-    // Add user message
     const userMessage = {
       id: `msg-${Date.now()}`,
       role: 'user' as const,
@@ -310,40 +150,8 @@ export const TablesProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       return s;
     }));
 
-    // For MVP, simulate an AI response
     setTimeout(() => {
-      // Process the message to provide a simple AI response
-      let aiResponse = "";
-      
-      if (message.toLowerCase().includes('how many')) {
-        aiResponse = `There are ${table.rowCount} rows in this table.`;
-      } else if (message.toLowerCase().includes('column') || message.toLowerCase().includes('fields')) {
-        aiResponse = `The table has the following columns: ${table.columns.map(c => c.header).join(', ')}.`;
-      } else if (message.toLowerCase().includes('average') || message.toLowerCase().includes('mean')) {
-        // Try to find a numeric column for an average calculation
-        const numericColumns = table.columns.filter(col => col.type === 'number');
-        if (numericColumns.length > 0) {
-          const column = numericColumns[0];
-          const sum = table.data.reduce((acc, row) => acc + (parseFloat(row[column.accessor]) || 0), 0);
-          const avg = (sum / table.rowCount).toFixed(2);
-          aiResponse = `The average of ${column.header} is ${avg}.`;
-        } else {
-          aiResponse = "I couldn't find a numeric column to calculate the average.";
-        }
-      } else if (message.toLowerCase().includes('max')) {
-        // Find max value in a numeric column
-        const numericColumns = table.columns.filter(col => col.type === 'number');
-        if (numericColumns.length > 0) {
-          const column = numericColumns[0];
-          const max = Math.max(...table.data.map(row => parseFloat(row[column.accessor]) || 0));
-          aiResponse = `The maximum value in ${column.header} is ${max}.`;
-        } else {
-          aiResponse = "I couldn't find a numeric column to calculate the maximum value.";
-        }
-      } else {
-        aiResponse = "I'm your AI data assistant. You can ask me questions about this table such as counting rows, finding column information, calculating averages, or finding maximum values.";
-      }
-      
+      const aiResponse = processAIResponse(message, table);
       const systemMessage = {
         id: `msg-${Date.now()}`,
         role: 'system' as const,
@@ -360,8 +168,7 @@ export const TablesProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }, 1000);
   };
 
-  // Get columns for a table
-  const getTableColumns = (id: string): Column[] => {
+  const getTableColumns = (id: string) => {
     const table = getTable(id);
     return table ? table.columns : [];
   };
