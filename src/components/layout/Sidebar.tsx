@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTables } from '@/context/TablesContext';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Upload, Table, MessageCircle, Plus } from 'lucide-react';
+import { Upload, Table, Database, MessageCircle, Plus } from 'lucide-react';
 
 export const Sidebar = () => {
   const location = useLocation();
@@ -14,10 +14,9 @@ export const Sidebar = () => {
   const uploadedTables = tables.filter(table => table.type === 'uploaded');
   const mergedTables = tables.filter(table => table.type === 'merged');
 
-  // Navigate to dashboard and scroll to upload section
+  // Navigate to tables and scroll to upload section
   const handleUploadClick = () => {
-    navigate('/');
-    // Add a small delay to ensure the component has rendered
+    navigate('/tables');
     setTimeout(() => {
       const uploadSection = document.getElementById('upload-section');
       if (uploadSection) {
@@ -52,60 +51,18 @@ export const Sidebar = () => {
               Dashboard
             </Button>
           </Link>
-        </div>
-        
-        {/* Uploaded Tables */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-muted-foreground">UPLOADED TABLES</h3>
-          </div>
-          <div className="space-y-1">
-            {uploadedTables.length > 0 ? (
-              uploadedTables.map(table => (
-                <Link to={`/table/${table.id}`} key={table.id}>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    className={cn(
-                      "w-full justify-start text-left overflow-hidden text-ellipsis", 
-                      location.pathname === `/table/${table.id}` && "bg-muted"
-                    )}
-                  >
-                    <div className="truncate">{table.name}</div>
-                  </Button>
-                </Link>
-              ))
-            ) : (
-              <div className="px-2 py-1 text-sm text-muted-foreground">No tables yet</div>
-            )}
-          </div>
-        </div>
-        
-        {/* Merged Tables */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-muted-foreground">MERGED TABLES</h3>
-          </div>
-          <div className="space-y-1">
-            {mergedTables.length > 0 ? (
-              mergedTables.map(table => (
-                <Link to={`/table/${table.id}`} key={table.id}>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    className={cn(
-                      "w-full justify-start text-left overflow-hidden text-ellipsis", 
-                      location.pathname === `/table/${table.id}` && "bg-muted"
-                    )}
-                  >
-                    <div className="truncate">{table.name}</div>
-                  </Button>
-                </Link>
-              ))
-            ) : (
-              <div className="px-2 py-1 text-sm text-muted-foreground">No merged tables yet</div>
-            )}
-          </div>
+          <Link to="/tables">
+            <Button 
+              variant="ghost" 
+              className={cn(
+                "w-full justify-start", 
+                location.pathname === "/tables" && "bg-muted"
+              )}
+            >
+              <Database className="mr-2 h-4 w-4" />
+              Tables
+            </Button>
+          </Link>
         </div>
         
         {/* Recent Chats */}
