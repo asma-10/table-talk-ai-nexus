@@ -12,7 +12,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Table, MessageCircle, Download, Trash } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { useTables, Table as TableType } from '@/context/TablesContext';
+import { useTables } from '@/context/TablesContext';
+import { Table as TableType } from '@/types/tables';
 
 interface TableListProps {
   tables: TableType[];

@@ -18,7 +18,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useTables, Table } from '@/context/TablesContext';
+import { useTables } from '@/context/TablesContext';
+import { Table } from '@/types/tables';
 import { CheckCircle } from 'lucide-react';
 
 interface MergeTablesDialogProps {

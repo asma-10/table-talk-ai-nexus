@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { toast } from '@/components/ui/use-toast';
-import { Table, ChatSession } from '../types/tables';
+import { Table, ChatSession, Column } from '../types/tables';
 import { parseCSV, performTableMerge } from '../utils/tableOperations';
 import { createNewChatSession, processAIResponse } from '../utils/chatOperations';
 

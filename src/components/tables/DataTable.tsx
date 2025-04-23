@@ -9,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Column } from '@/context/TablesContext';
+import { Column } from '@/types/tables';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 interface DataTableProps {
