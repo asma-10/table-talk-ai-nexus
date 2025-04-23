@@ -47,7 +47,7 @@ export const performTableMerge = (
   
   const baseTable = tablesToMerge[0];
   const secondTable = tablesToMerge[1];
-  let mergedData: Record<string, any>[] = [];
+  let mergedData: Record<string, any>[] = []; // Initialize as empty array
   
   if (joinType === 'inner') {
     const mappingKeys = Object.keys(columnMappings);

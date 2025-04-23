@@ -14,6 +14,18 @@ export const Sidebar = () => {
   const uploadedTables = tables.filter(table => table.type === 'uploaded');
   const mergedTables = tables.filter(table => table.type === 'merged');
 
+  // Navigate to dashboard and scroll to upload section
+  const handleUploadClick = () => {
+    navigate('/');
+    // Add a small delay to ensure the component has rendered
+    setTimeout(() => {
+      const uploadSection = document.getElementById('upload-section');
+      if (uploadSection) {
+        uploadSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 100);
+  };
+
   return (
     <div className="w-64 h-screen bg-card border-r border-border flex flex-col">
       {/* Logo/Brand */}
@@ -127,12 +139,10 @@ export const Sidebar = () => {
       
       {/* Upload Button */}
       <div className="p-4 border-t border-border">
-        <Link to="/">
-          <Button className="w-full" size="sm">
-            <Upload className="mr-2 h-4 w-4" />
-            Upload Table
-          </Button>
-        </Link>
+        <Button className="w-full" size="sm" onClick={handleUploadClick}>
+          <Upload className="mr-2 h-4 w-4" />
+          Upload Table
+        </Button>
       </div>
     </div>
   );
