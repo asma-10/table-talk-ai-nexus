@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { toast } from '@/components/ui/use-toast';
 
@@ -78,7 +77,7 @@ export const TablesProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         if (!isNaN(Number(value)) && value !== '') {
           row[header] = Number(value);
           // Update column type if not already set to number
-          if (columns[index].type !== 'number') {
+          if (columns[index].type === 'string') {
             columns[index].type = 'number';
           }
         } else {
@@ -154,6 +153,7 @@ export const TablesProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
     
     let mergedData: Record<string, any>[] = [];
+    
     const baseTable = tablesToMerge[0];
     const secondTable = tablesToMerge[1];
     
@@ -191,9 +191,6 @@ export const TablesProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         
         return acc;
       }, [] as Record<string, any>[]);
-    } else {
-      // For MVP, just handle inner join for now
-      mergedData = baseTable.data;
     }
     
     // Create combined list of columns
