@@ -8,7 +8,10 @@ class Settings(BaseSettings):
     API_PREFIX: str = "/api"
     
     # Configuration pour l'intégration n8n
-    N8N_WEBHOOK_URL: str = "https://asma-brb.app.n8n.cloud/webhook-test/process-tables"
+    N8N_WEBHOOK_URL: str = os.environ.get(
+        "N8N_WEBHOOK_URL", 
+        "https://asma-brb.app.n8n.cloud/webhook/process-tables"
+    )
     
     class Config:
         env_file = ".env"

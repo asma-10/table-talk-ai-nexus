@@ -22,7 +22,7 @@ export const parseCSV = (csvText: string): { columns: Column[], data: Record<str
         row[header] = Number(value);
         // Update column type if not already set to number
         if (columns[index].type === 'string') {
-          columns[index].type = 'number';
+          columns[index].type = 'number';  // Fixed: changed 'string' to 'number'
         }
       } else {
         row[header] = value;
@@ -47,12 +47,11 @@ export const performTableMerge = (
   
   const baseTable = tablesToMerge[0];
   const secondTable = tablesToMerge[1];
-  let mergedData: Record<string, any>[] = []; // Changed from const to let
+  let mergedData: Record<string, any>[] = []; 
   
   if (joinType === 'inner') {
     const mappingKeys = Object.keys(columnMappings);
     
-    // Correctly perform the inner join
     baseTable.data.forEach(baseRow => {
       const matches = secondTable.data.filter(secondRow => {
         return mappingKeys.every(baseCol => 
