@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -21,6 +20,7 @@ import { Label } from '@/components/ui/label';
 import { useTables } from '@/context/TablesContext';
 import { Table } from '@/types/tables';
 import { CheckCircle } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 interface MergeTablesDialogProps {
   open: boolean;
@@ -39,7 +39,6 @@ export const MergeTablesDialog: React.FC<MergeTablesDialogProps> = ({
   const [joinType, setJoinType] = useState<'inner' | 'outer' | 'left' | 'right'>('inner');
   const [columnMappings, setColumnMappings] = useState<Record<string, string>>({});
   
-  // Reset state when the dialog opens
   useEffect(() => {
     if (open) {
       setSelectedTables([]);
@@ -49,7 +48,6 @@ export const MergeTablesDialog: React.FC<MergeTablesDialogProps> = ({
     }
   }, [open]);
   
-  // Update table name when tables are selected
   useEffect(() => {
     if (selectedTables.length >= 2) {
       const table1 = tables.find(t => t.id === selectedTables[0]);
@@ -60,21 +58,18 @@ export const MergeTablesDialog: React.FC<MergeTablesDialogProps> = ({
     }
   }, [selectedTables, tables]);
   
-  // Get column options for the first selected table
   const getFirstTableColumns = () => {
     if (selectedTables.length === 0) return [];
     const table = tables.find(t => t.id === selectedTables[0]);
     return table ? table.columns : [];
   };
   
-  // Get column options for the second selected table
   const getSecondTableColumns = () => {
     if (selectedTables.length < 2) return [];
     const table = tables.find(t => t.id === selectedTables[1]);
     return table ? table.columns : [];
   };
   
-  // Handle column mapping selection
   const handleColumnMappingChange = (baseColumn: string, mappedColumn: string) => {
     setColumnMappings(prev => ({
       ...prev,
@@ -82,7 +77,6 @@ export const MergeTablesDialog: React.FC<MergeTablesDialogProps> = ({
     }));
   };
   
-  // Check if we can merge (need 2 tables and at least one column mapping)
   const canMerge = selectedTables.length >= 2 && 
                    tableName.trim() !== '' && 
                    Object.keys(columnMappings).length > 0;
@@ -91,15 +85,36 @@ export const MergeTablesDialog: React.FC<MergeTablesDialogProps> = ({
     if (!canMerge) return;
     
     try {
+      const tablesToMerge = selectedTables.map(id => tables.find(t => t.id === id)).filter(Boolean);
+      const mergeData = {
+        name: tableName.trim(),
+        tables: tablesToMerge,
+        joinType: joinType,
+        columnMappings: columnMappings
+      };
+
+      await sendDataToN8n({
+        name: tableName.trim(),
+        email: "user@example.com",
+        service: "table_merge",
+        mergeData: mergeData
+      });
+
       await mergeTables(
         selectedTables,
         tableName.trim(),
         joinType,
         columnMappings
       );
+      
       onOpenChange(false);
     } catch (error) {
-      console.error('Error merging tables:', error);
+      console.error('Error during merge operation:', error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la fusion des tables",
+        variant: "destructive"
+      });
     }
   };
   
@@ -114,7 +129,6 @@ export const MergeTablesDialog: React.FC<MergeTablesDialogProps> = ({
         </DialogHeader>
         
         <div className="grid gap-6 py-4">
-          {/* Table Selection */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="baseTable">Base Table</Label>
@@ -162,7 +176,6 @@ export const MergeTablesDialog: React.FC<MergeTablesDialogProps> = ({
             </div>
           </div>
           
-          {/* Table Name */}
           <div className="space-y-2">
             <Label htmlFor="tableName">Merged Table Name</Label>
             <Input
@@ -173,7 +186,6 @@ export const MergeTablesDialog: React.FC<MergeTablesDialogProps> = ({
             />
           </div>
           
-          {/* Join Type */}
           <div className="space-y-2">
             <Label htmlFor="joinType">Join Type</Label>
             <Select
@@ -195,7 +207,6 @@ export const MergeTablesDialog: React.FC<MergeTablesDialogProps> = ({
             </p>
           </div>
           
-          {/* Column Mappings */}
           {selectedTables.length >= 2 && (
             <div className="space-y-4">
               <Label>Column Mappings</Label>

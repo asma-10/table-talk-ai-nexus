@@ -1,10 +1,17 @@
 
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
+import { Table } from "@/types/tables";
 
 interface UserData {
   name: string;
   email: string;
   service: string;
+  mergeData?: {
+    name: string;
+    tables: Table[];
+    joinType: 'inner' | 'outer' | 'left' | 'right';
+    columnMappings: Record<string, string>;
+  };
 }
 
 export const sendDataToN8n = async (userData: UserData) => {
@@ -35,4 +42,3 @@ export const sendDataToN8n = async (userData: UserData) => {
     throw error;
   }
 };
-

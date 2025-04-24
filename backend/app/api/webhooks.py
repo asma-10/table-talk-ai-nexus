@@ -1,16 +1,24 @@
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from typing import Optional, Dict, List
 from app.config import settings
 import httpx
 import json
 
 router = APIRouter()
 
+class MergeData(BaseModel):
+    name: str
+    tables: List[dict]
+    joinType: str
+    columnMappings: Dict[str, str]
+
 class UserData(BaseModel):
     name: str
     email: str
     service: str
+    mergeData: Optional[MergeData] = None
 
 @router.post("/send-to-n8n")
 async def send_to_n8n(data: UserData):
@@ -29,4 +37,3 @@ async def send_to_n8n(data: UserData):
             return {"status": "success", "n8n_response": response.json()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
