@@ -1,4 +1,3 @@
-
 import { Table, Column } from '../types/tables';
 import { toast } from '@/components/ui/use-toast';
 

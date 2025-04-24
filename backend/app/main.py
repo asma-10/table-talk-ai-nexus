@@ -1,7 +1,6 @@
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import tables, chats
+from app.api import tables, chats, webhooks
 
 app = FastAPI(
     title="TableTalk API",
@@ -21,6 +20,7 @@ app.add_middleware(
 # Inclusion des routers API
 app.include_router(tables.router, prefix="/api/tables", tags=["tables"])
 app.include_router(chats.router, prefix="/api/chats", tags=["chats"])
+app.include_router(webhooks.router, prefix="/api/webhooks", tags=["webhooks"])
 
 @app.get("/")
 async def root():
