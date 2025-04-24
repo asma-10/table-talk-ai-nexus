@@ -40,6 +40,7 @@ export const MergeTablesDialog: React.FC<MergeTablesDialogProps> = ({
   const [tableName, setTableName] = useState('');
   const [joinType, setJoinType] = useState<'inner' | 'outer' | 'left' | 'right'>('inner');
   const [columnMappings, setColumnMappings] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(false);
   
   useEffect(() => {
     if (open) {
@@ -47,6 +48,7 @@ export const MergeTablesDialog: React.FC<MergeTablesDialogProps> = ({
       setTableName('');
       setJoinType('inner');
       setColumnMappings({});
+      setIsLoading(false);
     }
   }, [open]);
   
@@ -87,21 +89,12 @@ export const MergeTablesDialog: React.FC<MergeTablesDialogProps> = ({
     if (!canMerge) return;
     
     try {
-      const tablesToMerge = selectedTables.map(id => tables.find(t => t.id === id)).filter(Boolean) as Table[];
-      const mergeData = {
-        name: tableName.trim(),
-        tables: tablesToMerge,
-        joinType: joinType,
-        columnMappings: columnMappings
-      };
-
-      await sendDataToN8n({
-        name: tableName.trim(),
-        email: "user@example.com",
-        service: "table_merge",
-        mergeData: mergeData
-      });
-
+      setIsLoading(true);
+      const tablesToMerge = selectedTables
+        .map(id => tables.find(t => t.id === id))
+        .filter(Boolean) as Table[];
+      
+      // First perform the merge locally
       await mergeTables(
         selectedTables,
         tableName.trim(),
@@ -109,14 +102,41 @@ export const MergeTablesDialog: React.FC<MergeTablesDialogProps> = ({
         columnMappings
       );
       
+      // Then try to send to N8n (but don't block on failure)
+      try {
+        const mergeData = {
+          name: tableName.trim(),
+          tables: tablesToMerge,
+          joinType: joinType,
+          columnMappings: columnMappings
+        };
+
+        await sendDataToN8n({
+          name: tableName.trim(),
+          email: "user@example.com",
+          service: "table_merge",
+          mergeData: mergeData
+        });
+      } catch (webhookError) {
+        console.error('N8n webhook error:', webhookError);
+        // Continue anyway - webhook is secondary
+      }
+      
+      toast({
+        title: "Success",
+        description: "Tables merged successfully",
+      });
+      
       onOpenChange(false);
     } catch (error) {
       console.error('Error during merge operation:', error);
       toast({
-        title: "Erreur",
-        description: "Une erreur est survenue lors de la fusion des tables",
+        title: "Error",
+        description: "An error occurred while merging tables",
         variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -250,11 +270,15 @@ export const MergeTablesDialog: React.FC<MergeTablesDialogProps> = ({
           </Button>
           <Button 
             onClick={handleMerge} 
-            disabled={!canMerge}
+            disabled={!canMerge || isLoading}
             className="flex items-center"
           >
-            {canMerge && <CheckCircle className="mr-2 h-4 w-4" />}
-            Merge Tables
+            {isLoading ? "Merging..." : (
+              <>
+                {canMerge && <CheckCircle className="mr-2 h-4 w-4" />}
+                Merge Tables
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

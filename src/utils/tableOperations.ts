@@ -1,6 +1,6 @@
 
 import { Table, Column } from '../types/tables';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 export const parseCSV = (csvText: string): { columns: Column[], data: Record<string, any>[] } => {
   const lines = csvText.split('\n').filter(line => line.trim());
@@ -22,7 +22,7 @@ export const parseCSV = (csvText: string): { columns: Column[], data: Record<str
         row[header] = Number(value);
         // Update column type if not already set to number
         if (columns[index].type === 'string') {
-          columns[index].type = 'string';
+          columns[index].type = 'number';
         }
       } else {
         row[header] = value;
@@ -52,8 +52,8 @@ export const performTableMerge = (
   if (joinType === 'inner') {
     const mappingKeys = Object.keys(columnMappings);
     
-    // Fix the type issue by explicitly typing the result of reduce
-    mergedData = baseTable.data.reduce<Record<string, any>[]>((acc, baseRow) => {
+    // Correctly perform the inner join
+    baseTable.data.forEach(baseRow => {
       const matches = secondTable.data.filter(secondRow => {
         return mappingKeys.every(baseCol => 
           baseRow[baseCol] === secondRow[columnMappings[baseCol]]
@@ -68,11 +68,9 @@ export const performTableMerge = (
             newRow[newKey] = match[key];
           }
         });
-        acc.push(newRow);
+        mergedData.push(newRow);
       });
-      
-      return acc;
-    }, []);
+    });
   }
   
   let mergedColumns: Column[] = [...baseTable.columns];

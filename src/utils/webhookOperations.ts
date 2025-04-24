@@ -1,44 +1,38 @@
 
-import { toast } from "@/hooks/use-toast";
-import { Table } from "@/types/tables";
+import { toast } from '@/hooks/use-toast';
 
-interface UserData {
+interface MergeData {
+  name: string;
+  tables: any[];
+  joinType: string;
+  columnMappings: Record<string, string>;
+}
+
+interface WebhookData {
   name: string;
   email: string;
   service: string;
-  mergeData?: {
-    name: string;
-    tables: Table[];
-    joinType: 'inner' | 'outer' | 'left' | 'right';
-    columnMappings: Record<string, string>;
-  };
+  mergeData?: MergeData;
 }
 
-export const sendDataToN8n = async (userData: UserData) => {
+export const sendDataToN8n = async (data: WebhookData): Promise<any> => {
   try {
-    const response = await fetch("/api/webhooks/send-to-n8n", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(userData),
+    const response = await fetch('/api/webhooks/send-to-n8n', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
     });
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const result = await response.json();
-    toast({
-      title: "Succès",
-      description: "Les données ont été envoyées avec succès à n8n",
-    });
-    return result;
+    return await response.json();
   } catch (error) {
-    console.error("Erreur lors de l'envoi :", error);
-    toast({
-      title: "Erreur",
-      description: "Erreur lors de l'envoi des données à n8n",
-      variant: "destructive",
-    });
+    console.error('Error sending data to n8n:', error);
+    // We'll handle the error in the calling component instead of showing a toast here
     throw error;
   }
 };
