@@ -52,7 +52,8 @@ export const performTableMerge = (
   if (joinType === 'inner') {
     const mappingKeys = Object.keys(columnMappings);
     
-    mergedData = baseTable.data.reduce((acc, baseRow) => {
+    // Fix the type issue by explicitly typing the result of reduce
+    mergedData = baseTable.data.reduce<Record<string, any>[]>((acc, baseRow) => {
       const matches = secondTable.data.filter(secondRow => {
         return mappingKeys.every(baseCol => 
           baseRow[baseCol] === secondRow[columnMappings[baseCol]]
@@ -71,7 +72,7 @@ export const performTableMerge = (
       });
       
       return acc;
-    }, [] as Record<string, any>[]);
+    }, []);
   }
   
   let mergedColumns: Column[] = [...baseTable.columns];
