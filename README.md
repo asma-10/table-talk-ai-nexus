@@ -1,73 +1,80 @@
-# Welcome to your Lovable project
 
-## Project info
+# TableTalk - AI Data Nexus
 
-**URL**: https://lovable.dev/projects/2e763ba4-bce7-40c1-81bf-4f92d85da1f6
+Une application pour charger, fusionner et discuter avec vos données tabulaires. Cette version utilise une architecture HTML/CSS/JavaScript vanilla pour le frontend et FastAPI pour le backend.
 
-## How can I edit this code?
+## Structure du projet
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/2e763ba4-bce7-40c1-81bf-4f92d85da1f6) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+/tabletalk-app/
+  /frontend/          # Code HTML/CSS/JavaScript vanilla
+    /static/          # Ressources statiques (CSS, JS, assets)
+    /templates/       # Pages HTML
+  /backend/           # API FastAPI
+    /app/             # Code source du backend
+    requirements.txt  # Dépendances Python
 ```
 
-**Edit a file directly in GitHub**
+## Installation et démarrage
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Backend (FastAPI)
 
-**Use GitHub Codespaces**
+1. Aller dans le répertoire backend:
+   ```
+   cd backend
+   ```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+2. Créer et activer un environnement virtuel (recommandé):
+   ```
+   python -m venv env
+   source env/bin/activate  # sous Linux/MacOS
+   env\Scripts\activate     # sous Windows
+   ```
 
-## What technologies are used for this project?
+3. Installer les dépendances:
+   ```
+   pip install -r requirements.txt
+   ```
 
-This project is built with:
+4. Démarrer le serveur:
+   ```
+   python -m app.main
+   ```
+   Le serveur API sera accessible à l'adresse http://localhost:8000
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Frontend
 
-## How can I deploy this project?
+Pour le développement, vous pouvez utiliser n'importe quel serveur HTTP statique. Par exemple:
 
-Simply open [Lovable](https://lovable.dev/projects/2e763ba4-bce7-40c1-81bf-4f92d85da1f6) and click on Share -> Publish.
+1. Aller dans le répertoire frontend:
+   ```
+   cd frontend
+   ```
 
-## Can I connect a custom domain to my Lovable project?
+2. Utiliser le module http.server de Python:
+   ```
+   python -m http.server 3000
+   ```
+   Le frontend sera accessible à l'adresse http://localhost:3000
 
-Yes, you can!
+## Intégration avec n8n
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Cette application est conçue pour être facilement intégrée avec n8n:
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+1. Les points d'API REST peuvent être utilisés directement dans les workflows n8n.
+2. Le backend inclut des points d'intégration prévus dans `config.py` pour les webhooks n8n.
+3. Pour connecter à n8n, configurez la variable d'environnement `N8N_WEBHOOK_URL` ou modifiez directement le fichier `config.py`.
+
+## Fonctionnalités
+
+- Téléchargement et visualisation de données tabulaires (CSV)
+- Fusion de tables avec différents types de jointures
+- Chat interactif avec les données
+- Interface utilisateur responsive et intuitive
+- API RESTful complète pour l'intégration avec d'autres systèmes
+
+## Technologies utilisées
+
+- **Frontend**: HTML, CSS, JavaScript vanilla
+- **Backend**: FastAPI (Python)
+- **Données**: Traitement CSV, manipulation de données tabulaires

@@ -1,0 +1,45 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - TableTalk</title>
+  <meta name="description" content="TableTalk Dashboard">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/components.css">
+</head>
+<body>
+  <div id="app">
+    <header class="navbar"></header>
+    
+    <main class="container">
+      <div class="dashboard">
+        <div class="dashboard-header">
+          <h1>Dashboard</h1>
+          <a href="/tables" class="button primary">
+            <span class="icon">+</span>
+            Manage Tables
+          </a>
+        </div>
+        
+        <section class="recent-tables">
+          <h2>Recent Tables</h2>
+          <div id="recentTables" class="tables-grid">
+            <!-- Tables will be rendered dynamically here -->
+            <div class="loading-placeholder">Chargement des tableaux récents...</div>
+          </div>
+        </section>
+      </div>
+    </main>
+    
+    <div id="toaster"></div>
+  </div>
+  
+  <script src="/static/js/utils/api.js"></script>
+  <script src="/static/js/components/navbar.js"></script>
+  <script src="/static/js/components/toast.js"></script>
+  <script src="/static/js/components/tableCard.js"></script>
+  <script src="/static/js/pages/dashboard.js"></script>
+</body>
+</html>
