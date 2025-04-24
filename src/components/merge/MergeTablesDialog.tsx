@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -20,7 +21,8 @@ import { Label } from '@/components/ui/label';
 import { useTables } from '@/context/TablesContext';
 import { Table } from '@/types/tables';
 import { CheckCircle } from 'lucide-react';
-import { toast } from 'react-toastify';
+import { toast } from '@/hooks/use-toast';
+import { sendDataToN8n } from '@/utils/webhookOperations';
 
 interface MergeTablesDialogProps {
   open: boolean;
@@ -85,7 +87,7 @@ export const MergeTablesDialog: React.FC<MergeTablesDialogProps> = ({
     if (!canMerge) return;
     
     try {
-      const tablesToMerge = selectedTables.map(id => tables.find(t => t.id === id)).filter(Boolean);
+      const tablesToMerge = selectedTables.map(id => tables.find(t => t.id === id)).filter(Boolean) as Table[];
       const mergeData = {
         name: tableName.trim(),
         tables: tablesToMerge,

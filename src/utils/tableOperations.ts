@@ -1,3 +1,4 @@
+
 import { Table, Column } from '../types/tables';
 import { toast } from '@/components/ui/use-toast';
 
@@ -46,7 +47,7 @@ export const performTableMerge = (
   
   const baseTable = tablesToMerge[0];
   const secondTable = tablesToMerge[1];
-  const mergedData: Record<string, any>[] = []; // Initialize as empty array
+  let mergedData: Record<string, any>[] = []; // Changed from const to let
   
   if (joinType === 'inner') {
     const mappingKeys = Object.keys(columnMappings);
