@@ -22,7 +22,6 @@ import { useTables } from '@/context/TablesContext';
 import { Table } from '@/types/tables';
 import { CheckCircle, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { sendDataToN8n } from '@/utils/webhookOperations';
 
 interface MergeTablesDialogProps {
   open: boolean;
@@ -41,7 +40,6 @@ export const MergeTablesDialog: React.FC<MergeTablesDialogProps> = ({
   const [joinType, setJoinType] = useState<'inner' | 'outer' | 'left' | 'right'>('inner');
   const [columnMappings, setColumnMappings] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [webhookSent, setWebhookSent] = useState(false);
   
   useEffect(() => {
     if (open) {
@@ -50,7 +48,6 @@ export const MergeTablesDialog: React.FC<MergeTablesDialogProps> = ({
       setJoinType('inner');
       setColumnMappings({});
       setIsLoading(false);
-      setWebhookSent(false);
     }
   }, [open]);
   
@@ -92,49 +89,8 @@ export const MergeTablesDialog: React.FC<MergeTablesDialogProps> = ({
     
     try {
       setIsLoading(true);
-      const tablesToMerge = selectedTables
-        .map(id => tables.find(t => t.id === id))
-        .filter(Boolean) as Table[];
       
-      // Prepare for webhook
-      const mergeData = {
-        name: tableName.trim(),
-        tables: tablesToMerge.map(table => ({
-          id: table.id,
-          name: table.name,
-          columns: table.columns,
-          // Send only necessary data to reduce payload size
-          data: table.data.slice(0, 100), // Limit to first 100 rows
-        })),
-        joinType,
-        columnMappings
-      };
-      
-      // First try to send to N8n
-      try {
-        await sendDataToN8n({
-          name: tableName.trim(),
-          email: "user@example.com",
-          service: "table_merge",
-          mergeData
-        });
-        
-        toast({
-          title: "Webhook success",
-          description: "Data was successfully sent to n8n workflow",
-        });
-        
-        setWebhookSent(true);
-      } catch (webhookError) {
-        console.error('N8n webhook error:', webhookError);
-        toast({
-          title: "Webhook error",
-          description: "Could not send data to n8n workflow. Continuing with local merge.",
-          variant: "destructive"
-        });
-      }
-      
-      // Then perform the merge locally
+      // Perform the merge locally using the context function
       await mergeTables(
         selectedTables,
         tableName.trim(),
@@ -239,9 +195,9 @@ export const MergeTablesDialog: React.FC<MergeTablesDialogProps> = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="inner">Inner Join</SelectItem>
-                <SelectItem value="outer" disabled>Outer Join (Coming Soon)</SelectItem>
-                <SelectItem value="left" disabled>Left Join (Coming Soon)</SelectItem>
-                <SelectItem value="right" disabled>Right Join (Coming Soon)</SelectItem>
+                <SelectItem value="outer">Outer Join</SelectItem>
+                <SelectItem value="left">Left Join</SelectItem>
+                <SelectItem value="right">Right Join</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground mt-1">

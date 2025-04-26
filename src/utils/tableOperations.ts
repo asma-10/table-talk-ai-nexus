@@ -22,7 +22,7 @@ export const parseCSV = (csvText: string): { columns: Column[], data: Record<str
         row[header] = Number(value);
         // Update column type if not already set to number
         if (columns[index].type === 'string') {
-          columns[index].type = 'number';  // Fixed: changed 'string' to 'number'
+          columns[index].type = 'string';  // Keep as string initially, will convert based on data patterns
         }
       } else {
         row[header] = value;
