@@ -29,7 +29,7 @@ async def get_table(table_id: str):
     for table in tables_db:
         if table.id == table_id:
             return table
-    raise HTTPException(status_code=404, detail="Table non trouvée")
+    raise HTTPException(status_code=404, detail="Table not found")
 
 @router.post("/upload", response_model=Table)
 async def upload_table(file: UploadFile = File(...), name: str = Form(None)):
@@ -38,7 +38,7 @@ async def upload_table(file: UploadFile = File(...), name: str = Form(None)):
         if not name:
             name = file.filename.split(".")[0] if file.filename else "Table"
         
-        # Utiliser le service pour parser le CSV
+        # Use the service to parse the CSV
         result = parse_csv(content.decode('utf-8'))
         
         table = Table(
@@ -56,7 +56,7 @@ async def upload_table(file: UploadFile = File(...), name: str = Form(None)):
         return table
     except Exception as e:
         logger.error(f"Error processing upload: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"Erreur lors du traitement: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error processing upload: {str(e)}")
 
 @router.post("/merge", response_model=Table)
 async def merge_tables_endpoint(
@@ -66,7 +66,7 @@ async def merge_tables_endpoint(
     column_mappings: Dict[str, str]
 ):
     if len(table_ids) < 2:
-        raise HTTPException(status_code=400, detail="Au moins deux tables sont nécessaires pour fusionner")
+        raise HTTPException(status_code=400, detail="At least two tables are required for merging")
     
     tables_to_merge = []
     for id in table_ids:
@@ -77,7 +77,7 @@ async def merge_tables_endpoint(
                 found = True
                 break
         if not found:
-            raise HTTPException(status_code=404, detail=f"Table {id} non trouvée")
+            raise HTTPException(status_code=404, detail=f"Table {id} not found")
     
     try:
         # Clean data before merging
@@ -91,7 +91,7 @@ async def merge_tables_endpoint(
         return merged_table
     except Exception as e:
         logger.error(f"Error merging tables: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"Erreur lors de la fusion: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error merging tables: {str(e)}")
 
 @router.delete("/{table_id}")
 async def delete_table(table_id: str):
@@ -101,8 +101,8 @@ async def delete_table(table_id: str):
             deleted_name = tables_db[i].name
             tables_db.pop(i)
             logger.info(f"Table deleted: {deleted_name}")
-            return {"message": "Table supprimée avec succès"}
-    raise HTTPException(status_code=404, detail="Table non trouvée")
+            return {"message": "Table deleted successfully"}
+    raise HTTPException(status_code=404, detail="Table not found")
 
 @router.post("/{table_id}/clean", response_model=Table)
 async def clean_table(table_id: str):

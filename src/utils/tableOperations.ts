@@ -20,9 +20,9 @@ export const parseCSV = (csvText: string): { columns: Column[], data: Record<str
       const value = values[index] || '';
       if (!isNaN(Number(value)) && value !== '') {
         row[header] = Number(value);
-        // Update column type if not already set to number
+        // Update column type if it's a number
         if (columns[index].type === 'string') {
-          columns[index].type = 'string';  // Keep as string initially, will convert based on data patterns
+          columns[index].type = 'number';
         }
       } else {
         row[header] = value;
@@ -49,20 +49,24 @@ export const performTableMerge = (
   const secondTable = tablesToMerge[1];
   let mergedData: Record<string, any>[] = []; 
   
+  // Fix for inner join
   if (joinType === 'inner') {
     const mappingKeys = Object.keys(columnMappings);
     
     baseTable.data.forEach(baseRow => {
       const matches = secondTable.data.filter(secondRow => {
-        return mappingKeys.every(baseCol => 
-          baseRow[baseCol] === secondRow[columnMappings[baseCol]]
-        );
+        return mappingKeys.every(baseCol => {
+          const baseValue = baseRow[baseCol];
+          const secondValue = secondRow[columnMappings[baseCol]];
+          // Compare values accounting for different types
+          return String(baseValue) === String(secondValue);
+        });
       });
       
       matches.forEach(match => {
         const newRow = { ...baseRow };
         Object.keys(match).forEach(key => {
-          if (!Object.values(columnMappings).includes(key)) {
+          if (!mappingKeys.includes(columnMappings[key])) {
             const newKey = baseRow.hasOwnProperty(key) ? `${secondTable.name}_${key}` : key;
             newRow[newKey] = match[key];
           }
@@ -71,7 +75,130 @@ export const performTableMerge = (
       });
     });
   }
+  // Implement left join
+  else if (joinType === 'left') {
+    const mappingKeys = Object.keys(columnMappings);
+    
+    baseTable.data.forEach(baseRow => {
+      const matches = secondTable.data.filter(secondRow => {
+        return mappingKeys.every(baseCol => {
+          return String(baseRow[baseCol]) === String(secondRow[columnMappings[baseCol]]);
+        });
+      });
+      
+      if (matches.length > 0) {
+        // For matching rows
+        matches.forEach(match => {
+          const newRow = { ...baseRow };
+          Object.keys(match).forEach(key => {
+            if (!Object.values(columnMappings).includes(key)) {
+              const newKey = baseRow.hasOwnProperty(key) ? `${secondTable.name}_${key}` : key;
+              newRow[newKey] = match[key];
+            }
+          });
+          mergedData.push(newRow);
+        });
+      } else {
+        // For non-matching rows (include only base table data)
+        const newRow = { ...baseRow };
+        secondTable.columns.forEach(col => {
+          if (!Object.values(columnMappings).includes(col.accessor)) {
+            const newKey = baseRow.hasOwnProperty(col.accessor) ? `${secondTable.name}_${col.accessor}` : col.accessor;
+            newRow[newKey] = null;
+          }
+        });
+        mergedData.push(newRow);
+      }
+    });
+  }
+  // Implement right join
+  else if (joinType === 'right') {
+    const mappingKeys = Object.keys(columnMappings);
+    
+    secondTable.data.forEach(secondRow => {
+      const matches = baseTable.data.filter(baseRow => {
+        return mappingKeys.every(baseCol => {
+          return String(baseRow[baseCol]) === String(secondRow[columnMappings[baseCol]]);
+        });
+      });
+      
+      if (matches.length > 0) {
+        // For matching rows
+        matches.forEach(match => {
+          const newRow = { ...match };
+          Object.keys(secondRow).forEach(key => {
+            if (!mappingKeys.includes(columnMappings[key])) {
+              const newKey = match.hasOwnProperty(key) ? `${secondTable.name}_${key}` : key;
+              newRow[newKey] = secondRow[key];
+            }
+          });
+          mergedData.push(newRow);
+        });
+      } else {
+        // For non-matching rows (include only second table data)
+        const newRow: Record<string, any> = {};
+        baseTable.columns.forEach(col => {
+          newRow[col.accessor] = null;
+        });
+        
+        Object.keys(secondRow).forEach(key => {
+          if (!Object.values(columnMappings).includes(key)) {
+            const newKey = `${secondTable.name}_${key}`;
+            newRow[newKey] = secondRow[key];
+          } else {
+            // For join columns, preserve the value
+            const baseCol = Object.keys(columnMappings).find(k => columnMappings[k] === key);
+            if (baseCol) {
+              newRow[baseCol] = secondRow[key];
+            }
+          }
+        });
+        mergedData.push(newRow);
+      }
+    });
+  }
+  // Implement outer join
+  else if (joinType === 'outer') {
+    // First, do a left join
+    const leftJoinData = [...performTableMerge(tablesToMerge, name, 'left', columnMappings).data];
+    
+    // Then add non-matched rows from second table (right join without duplicates)
+    const mappingKeys = Object.keys(columnMappings);
+    
+    secondTable.data.forEach(secondRow => {
+      const isMatched = baseTable.data.some(baseRow => {
+        return mappingKeys.every(baseCol => {
+          return String(baseRow[baseCol]) === String(secondRow[columnMappings[baseCol]]);
+        });
+      });
+      
+      if (!isMatched) {
+        const newRow: Record<string, any> = {};
+        baseTable.columns.forEach(col => {
+          newRow[col.accessor] = null;
+        });
+        
+        Object.keys(secondRow).forEach(key => {
+          if (!Object.values(columnMappings).includes(key)) {
+            const newKey = `${secondTable.name}_${key}`;
+            newRow[newKey] = secondRow[key];
+          } else {
+            // For join columns, preserve the value
+            const baseCol = Object.keys(columnMappings).find(k => columnMappings[k] === key);
+            if (baseCol) {
+              newRow[baseCol] = secondRow[key];
+            }
+          }
+        });
+        
+        mergedData.push(newRow);
+      }
+    });
+    
+    mergedData = [...leftJoinData, ...mergedData];
+  }
   
+  // Build merged columns correctly
   let mergedColumns: Column[] = [...baseTable.columns];
   
   secondTable.columns.forEach(col => {
@@ -90,6 +217,13 @@ export const performTableMerge = (
       }
     }
   });
+  
+  // Debug information
+  console.log('Base table data count:', baseTable.data.length);
+  console.log('Second table data count:', secondTable.data.length);
+  console.log('Merged data count:', mergedData.length);
+  console.log('Join type:', joinType);
+  console.log('Column mappings:', columnMappings);
   
   return {
     id: `merged-${Date.now()}`,
