@@ -21,8 +21,9 @@ export const parseCSV = (csvText: string): { columns: Column[], data: Record<str
       if (!isNaN(Number(value)) && value !== '') {
         row[header] = Number(value);
         // Update column type if it's a number
+        // Fix: Ensure we're using a type that's valid for Column.type
         if (columns[index].type === 'string') {
-          columns[index].type = 'number';
+          columns[index].type = 'number' as const;
         }
       } else {
         row[header] = value;
